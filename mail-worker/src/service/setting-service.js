@@ -26,6 +26,10 @@ const settingService = {
 
 		const setting = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
 
+		if (!setting) {
+			throw new BizError('数据库未初始化 Database not initialized.');
+		}
+
 		let domainList = c.env.domain;
 
 		if (typeof domainList === 'string') {
@@ -73,10 +77,10 @@ const settingService = {
 
 
 		if (!showSiteKey) {
-			settingRow.siteKey = settingRow.siteKey ? `${settingRow.siteKey.slice(0, 12)}******` : null;
+			settingRow.siteKey = settingRow.siteKey ? `${settingRow.siteKey.slice(0, 6)}******` : null;
 		}
 
-		settingRow.secretKey = settingRow.secretKey ? `${settingRow.secretKey.slice(0, 12)}******` : null;
+		settingRow.secretKey = settingRow.secretKey ? `${settingRow.secretKey.slice(0, 6)}******` : null;
 
 		Object.keys(settingRow.resendTokens).forEach(key => {
 			settingRow.resendTokens[key] = `${settingRow.resendTokens[key].slice(0, 12)}******`;
