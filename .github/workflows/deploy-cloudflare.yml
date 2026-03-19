@@ -202,19 +202,35 @@ jobs:
         run: |
           echo "🚀 Starting deployment..."
           DEPLOY_ARGS="-c wrangler-action.toml"
+          DNS_OVERRIDE_APPLIED="false"
+          OVERRIDE_DNS_VALUE=$(echo "${OVERRIDE_EXISTING_DNS_RECORD:-false}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
 
-          if [ -n "$CUSTOM_DOMAIN" ] && ([[ "${OVERRIDE_EXISTING_DNS_RECORD,,}" = "true" ]] || [[ "$OVERRIDE_EXISTING_DNS_RECORD" = "1" ]]); then
+          if [ -n "$CUSTOM_DOMAIN" ] && [[ "$OVERRIDE_DNS_VALUE" =~ ^(true|1|yes|on)$ ]]; then
             DEPLOY_ARGS="$DEPLOY_ARGS --override-existing-dns-record"
+            DNS_OVERRIDE_APPLIED="true"
             echo "⚠️ DNS override is enabled for custom domain deployment."
           fi
 
-          pnpm wrangler deploy $DEPLOY_ARGS 2>&1 \
-            | tee deploy.log \
-            | grep -v "https://.*\.workers\.dev" \
-            | sed -E 's/env\.domain .*/env.domain (***)/' \
-            || true
-          
-          DEPLOY_EXIT_CODE=${PIPESTATUS[0]}
+          run_deploy() {
+            pnpm wrangler deploy $1 2>&1 \
+              | tee deploy.log \
+              | grep -v "https://.*\.workers\.dev" \
+              | sed -E 's/env\.domain .*/env.domain (***)/' \
+              || true
+
+            return ${PIPESTATUS[0]}
+          }
+
+          run_deploy "$DEPLOY_ARGS"
+          DEPLOY_EXIT_CODE=$?
+
+          if [ $DEPLOY_EXIT_CODE -ne 0 ] && [ -n "$CUSTOM_DOMAIN" ] && [ "$DNS_OVERRIDE_APPLIED" != "true" ] && grep -q "code: 100117" deploy.log; then
+            echo "⚠️ Detected DNS record conflict (code 100117). Retrying with --override-existing-dns-record..."
+            DEPLOY_ARGS="$DEPLOY_ARGS --override-existing-dns-record"
+            run_deploy "$DEPLOY_ARGS"
+            DEPLOY_EXIT_CODE=$?
+          fi
+
           if [ $DEPLOY_EXIT_CODE -ne 0 ]; then
             exit 1
           fi
