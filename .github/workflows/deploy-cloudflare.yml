@@ -24,6 +24,7 @@ jobs:
       D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID || vars.D1_DATABASE_ID }}
       KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID || vars.KV_NAMESPACE_ID }}
       R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME || vars.R2_BUCKET_NAME }}
+      OVERRIDE_EXISTING_DNS_RECORD: ${{ secrets.OVERRIDE_EXISTING_DNS_RECORD || vars.OVERRIDE_EXISTING_DNS_RECORD || 'false' }}
       LINUXDO_CLIENT_ID: ${{ secrets.LINUXDO_CLIENT_ID || vars.LINUXDO_CLIENT_ID }}
       LINUXDO_CLIENT_SECRET: ${{ secrets.LINUXDO_CLIENT_SECRET || vars.LINUXDO_CLIENT_SECRET }}
       LINUXDO_CALLBACK_URL: ${{ secrets.LINUXDO_CALLBACK_URL || vars.LINUXDO_CALLBACK_URL }}
@@ -200,7 +201,14 @@ jobs:
         working-directory: ./mail-worker
         run: |
           echo "🚀 Starting deployment..."
-          pnpm wrangler deploy -c wrangler-action.toml 2>&1 \
+          DEPLOY_ARGS="-c wrangler-action.toml"
+
+          if [ -n "$CUSTOM_DOMAIN" ] && ([[ "${OVERRIDE_EXISTING_DNS_RECORD,,}" = "true" ]] || [[ "$OVERRIDE_EXISTING_DNS_RECORD" = "1" ]]); then
+            DEPLOY_ARGS="$DEPLOY_ARGS --override-existing-dns-record"
+            echo "⚠️ DNS override is enabled for custom domain deployment."
+          fi
+
+          pnpm wrangler deploy $DEPLOY_ARGS 2>&1 \
             | tee deploy.log \
             | grep -v "https://.*\.workers\.dev" \
             | sed -E 's/env\.domain .*/env.domain (***)/' \

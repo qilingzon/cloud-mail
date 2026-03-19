@@ -14,6 +14,8 @@
 | `D1_DATABASE_ID`        |  ✅  | 您的 D1 数据库的 ID                                     |
 | `KV_NAMESPACE_ID`       |  ✅  | 您的 KV 命名空间的 ID                                   |
 | `R2_BUCKET_NAME`        |  ✅  | 您的 R2 存储桶的名称                                    |
+| `CUSTOM_DOMAIN`         |  ❌  | （可选）Worker 绑定的自定义域名（例如 `api.example.com`） |
+| `OVERRIDE_EXISTING_DNS_RECORD` |  ❌  | （可选）`true` 时覆盖 `CUSTOM_DOMAIN` 已存在的 A/CNAME 记录 |
 | `DOMAIN`                |  ✅  | 您要用于邮件服务的域名（例如 `["xx.xx"]，多域名用,分隔`）        |
 | `ADMIN`                 |  ✅  | 您的管理员邮箱地址（例如 `admin@example.com`）      |
 | `JWT_SECRET`            |  ✅  | 用于生成和验证 JWT 的随机长字符串                     |
